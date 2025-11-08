@@ -1,0 +1,181 @@
+========================================
+화학물질 안전성 분석 API - 사용 가이드
+========================================
+
+📡 API 엔드포인트
+-----------------
+Base URL: https://chemical-analyzer-v2.onrender.com
+
+
+1️⃣ Health Check (서버 상태 확인)
+==================================
+
+GET /health
+
+응답:
+{
+  "status": "healthy",
+  "version": "2.0-gemini-compact",
+  "ai_provider": "Google Gemini"
+}
+
+
+2️⃣ 화학물질 분석 (메인 API)
+=============================
+
+POST /hybrid-analyze
+Content-Type: application/json
+
+📥 입력 포맷
+-----------
+{
+  "substances": ["물질명1", "물질명2", ...],
+  "use_ai": true
+}
+
+- substances: 화학물질 영문명 배열 (2개 이상)
+- use_ai: AI 요약 사용 여부 (true/false)
+  - true: AI 요약 포함 (2-5분)
+  - false: 규칙 기반만 (더 빠름)
+
+
+📤 출력 포맷
+-----------
+{
+  "success": true,
+  "simple_response": {
+    "risk_level": "위험",  // "위험", "주의", "안전"
+    "message": "2가지 위험한 조합이 발견되었어요.\n\n락스와 암모니아가 만나면..."
+  },
+  "safety_links": {
+    "msds_links": [
+      {
+        "title": "무수 암모니아 안전보건자료",
+        "url": "https://msds.kosha.or.kr/...",
+        "description": "무수 암모니아의 상세 안전 정보..."
+      }
+    ],
+    "general_resources": [
+      {
+        "title": "MSDS 통합검색 (안전보건공단)",
+        "url": "https://msds.kosha.or.kr/",
+        "description": "모든 화학물질의 MSDS 검색"
+      }
+    ]
+  },
+  "error": null
+}
+
+
+🔧 사용 예시
+============
+
+예시 1: cURL
+-------------
+curl -X POST https://chemical-analyzer-v2.onrender.com/hybrid-analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "substances": ["Bleach", "Ammonia"],
+    "use_ai": true
+  }'
+
+
+예시 2: JavaScript (Fetch)
+---------------------------
+const response = await fetch('https://chemical-analyzer-v2.onrender.com/hybrid-analyze', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    substances: ['Bleach', 'Ammonia'],
+    use_ai: true
+  })
+});
+
+const data = await response.json();
+console.log(data.simple_response.risk_level);  // "위험"
+console.log(data.simple_response.message);      // AI 요약 메시지
+
+
+예시 3: Python (Requests)
+--------------------------
+import requests
+
+response = requests.post(
+    'https://chemical-analyzer-v2.onrender.com/hybrid-analyze',
+    json={
+        'substances': ['Bleach', 'Ammonia'],
+        'use_ai': True
+    },
+    timeout=300  # 5분
+)
+
+data = response.json()
+print(data['simple_response']['risk_level'])  # "위험"
+
+
+예시 4: Axios (React/Node.js)
+------------------------------
+import axios from 'axios';
+
+const { data } = await axios.post(
+  'https://chemical-analyzer-v2.onrender.com/hybrid-analyze',
+  {
+    substances: ['Bleach', 'Ammonia'],
+    use_ai: true
+  },
+  { timeout: 300000 }  // 5분
+);
+
+const riskLevel = data.simple_response.risk_level;
+const message = data.simple_response.message;
+
+
+⚠️ 중요 사항
+============
+
+1. Timeout 설정
+   - 반드시 5분(300초) 이상으로 설정
+   - CAMEO 크롤링에 2-5분 소요
+
+2. 화학물질명
+   - 영문명으로 입력 (예: "Bleach", "Ammonia")
+   - 최소 2개 이상 필요
+
+3. 응답 필드
+   - risk_level: "위험", "주의", "안전" 중 하나
+   - message: 사용자에게 보여줄 메시지 (한국어)
+   - safety_links: MSDS 및 안전 정보 링크
+
+4. 에러 처리
+   - HTTP 404: 화학물질을 찾을 수 없음
+   - HTTP 500: 서버 오류
+   - Timeout: 5분 초과 시
+
+5. Cold Start
+   - 첫 요청 시 30-60초 추가 대기 가능 (Render sleep)
+
+
+📊 응답 시간
+============
+- Health Check: <1초
+- AI 사용: 2-5분
+- AI 미사용: 2-4분 (크롤링만)
+
+
+🔗 추가 리소스
+==============
+- Swagger UI: https://chemical-analyzer-v2.onrender.com/docs
+- GitHub: https://github.com/lemonminyoung/Nemo-jisanhak_ver2
+
+
+📞 문제 발생 시
+===============
+1. /health 엔드포인트로 서버 상태 확인
+2. Timeout을 300초 이상으로 설정했는지 확인
+3. substances 배열에 최소 2개 이상 물질이 있는지 확인
+4. GitHub Issues에 문의
+
+
+끝.
