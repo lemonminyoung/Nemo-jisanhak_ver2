@@ -110,28 +110,23 @@ async def hybrid_analyze_endpoint(request: AnalysisRequest):
     Nemo v1 호환 포맷 (products + casNumbers)
     """
     try:
-        # products에서 화학물질명 추출
-        substances = []
+        # products 배열에서 모든 CAS 번호 추출 (v1과 동일)
+        all_cas_numbers = []
         for product in request.products:
-            # CAS Number가 있으면 첫 번째 CAS로 검색
-            if product.casNumbers and len(product.casNumbers) > 0:
-                substances.append(product.casNumbers[0])
-            # CAS가 없으면 제품명으로 검색
-            elif product.productName:
-                substances.append(product.productName)
+            all_cas_numbers.extend(product.casNumbers)
 
-        if len(substances) < 2:
+        if len(all_cas_numbers) < 2:
             raise HTTPException(
                 status_code=400,
-                detail="At least 2 products are required"
+                detail="At least 2 CAS numbers are required"
             )
 
-        print(f"[V2] Analyzing {len(substances)} products...")
-        print(f"[V2] Substances: {substances}")
+        print(f"[V2] Analyzing {len(all_cas_numbers)} CAS numbers from {len(request.products)} products...")
+        print(f"[V2] CAS Numbers: {all_cas_numbers}")
 
-        # 1. CAMEO 크롤링
+        # 1. CAMEO 크롤링 (CAS Number로 검색)
         print("[V2] Step 1: CAMEO crawling...")
-        cameo_results = await crawl_with_suppressed_output(substances)
+        cameo_results = await crawl_with_suppressed_output(all_cas_numbers)
 
         if not cameo_results:
             raise HTTPException(
