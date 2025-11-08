@@ -187,6 +187,8 @@ def analyze_with_gemini_compact(analysis_result: dict, retries: int = 2) -> dict
     Gemini API로 화학 안전성 분석 결과를 간결하게 요약
     토큰 절약을 위한 최소 프롬프트
     """
+    import time
+
     if not GEMINI_API_KEY:
         return {
             "success": False,
@@ -203,6 +205,12 @@ def analyze_with_gemini_compact(analysis_result: dict, retries: int = 2) -> dict
     for attempt in range(1, retries + 1):
         try:
             print(f"[Gemini] Attempt {attempt}/{retries}")
+
+            # Rate limit 대응: 재시도 시 대기
+            if attempt > 1:
+                wait_time = 5 * attempt  # 2번째: 10초, 3번째: 15초
+                print(f"[Gemini] Waiting {wait_time}s for rate limit...")
+                time.sleep(wait_time)
 
             model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
