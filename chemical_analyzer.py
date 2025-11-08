@@ -7,9 +7,9 @@ import os
 async def add_substance_to_mychemicals(page, substance: str):
     # Go to search page and search for substance
     await page.goto("https://cameochemicals.noaa.gov/search/simple", wait_until="networkidle")
-    
-    # Locate the input field by id and fill in the substance name
-    input_box = page.locator("input#name")
+
+    # Locate the CAS number input field and fill in the substance CAS number
+    input_box = page.locator("input[name='cas']")
     await input_box.fill(substance)
     await input_box.press("Enter")
     await page.wait_for_load_state("networkidle")
@@ -164,7 +164,7 @@ def run_pipeline(input_payload: dict, output_file: str, analyze_with_ai: bool = 
         input_payload: 입력 데이터 (substances 리스트 포함)
         output_file: CAMEO 결과 저장 경로
         analyze_with_ai: True이면 AI 분석도 수행
-        api_url: Colab API URL (analyze_with_ai=True일 때 필요)
+        api_url: AI API URL (analyze_with_ai=True일 때 필요)
     """
     substances = input_payload.get("substances", [])
 
@@ -211,9 +211,9 @@ if __name__ == "__main__":
     with open(input_path, "r", encoding="utf-8") as f:
         input_data = json.load(f)
 
-    # AI 분석을 사용하려면 아래 주석을 해제하고 Colab URL을 입력하세요
-    # COLAB_API_URL = "https://your-ngrok-url.ngrok.io"
-    # run_pipeline(input_data, output_path, analyze_with_ai=True, api_url=COLAB_API_URL)
+    # AI 분석을 사용하려면 아래 주석을 해제하고 Hugging Face Spaces URL을 입력하세요
+    # AI_API_URL = "https://your-space.hf.space"
+    # run_pipeline(input_data, output_path, analyze_with_ai=True, api_url=AI_API_URL)
 
     # AI 분석 없이 실행
     run_pipeline(input_data, output_path)
