@@ -1,0 +1,144 @@
+========================================
+화학물질 안전성 분석 API - 백엔드 연동 가이드
+========================================
+
+BASE URL
+--------
+https://chemical-analyzer-v2.onrender.com
+
+
+API 엔드포인트
+--------------
+
+1. Health Check
+   GET /health
+
+2. 화학물질 분석
+   POST /hybrid-analyze
+
+
+입력 포맷
+--------
+{
+  "useAi": true,
+  "products": [
+    {
+      "productName": "Bleach Cleaner",
+      "casNumbers": ["7681-52-9"]
+    },
+    {
+      "productName": "Ammonia Solution",
+      "casNumbers": ["1336-21-6"]
+    }
+  ]
+}
+
+- useAi: true (AI 요약 사용) / false (규칙 기반만)
+- products: 최소 2개 이상
+- casNumbers: CAS Number 배열 (필수, 모든 CAS Number 추출하여 검색)
+
+
+출력 포맷
+--------
+{
+  "success": true,
+  "simple_response": {
+    "risk_level": "위험",
+    "message": "2가지 위험한 조합이 발견되었어요.\n\n락스와 암모니아가 만나면 유독가스가 발생할 수 있어요.\n\n이 제품들을 함께 사용하면 위험할 수 있으니 주의해주세요."
+  },
+  "safety_links": {
+    "msds_links": [
+      {
+        "title": "차아염소산나트륨 (락스) 안전보건자료",
+        "url": "https://msds.kosha.or.kr/...",
+        "description": "차아염소산나트륨 (락스)의 상세 안전 정보 및 취급 주의사항"
+      }
+    ],
+    "general_resources": [
+      {
+        "title": "MSDS 통합검색 (안전보건공단)",
+        "url": "https://msds.kosha.or.kr/",
+        "description": "모든 화학물질의 물질안전보건자료(MSDS) 검색"
+      }
+    ]
+  },
+  "error": null
+}
+
+risk_level: "위험", "주의", "안전" 중 하나
+message: 사용자에게 표시할 한국어 안전 메시지
+
+
+사용 예시
+--------
+
+JavaScript (Fetch):
+const response = await fetch('https://chemical-analyzer-v2.onrender.com/hybrid-analyze', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    useAi: true,
+    products: [
+      { productName: 'Bleach', casNumbers: ['7681-52-9'] },
+      { productName: 'Ammonia', casNumbers: ['1336-21-6'] }
+    ]
+  })
+});
+const data = await response.json();
+console.log(data.simple_response.risk_level);  // "위험"
+console.log(data.simple_response.message);
+
+Python:
+import requests
+
+response = requests.post(
+    'https://chemical-analyzer-v2.onrender.com/hybrid-analyze',
+    json={
+        'useAi': True,
+        'products': [
+            {'productName': 'Bleach', 'casNumbers': ['7681-52-9']},
+            {'productName': 'Ammonia', 'casNumbers': ['1336-21-6']}
+        ]
+    },
+    timeout=300
+)
+data = response.json()
+print(data['simple_response']['risk_level'])
+
+
+주의사항
+-------
+
+1. Timeout 설정
+   - 필수: 300초(5분) 이상
+   - CAMEO 크롤링에 2-5분 소요
+
+2. CAS Number
+   - 모든 products의 casNumbers 배열에서 추출하여 검색
+   - 최소 2개 이상의 CAS Number 필요
+
+3. 첫 요청
+   - Cold Start로 30-60초 추가 소요 가능
+   - UptimeRobot으로 서버 유지 (5분마다 핑)
+
+4. AI 요약 실패 시
+   - Gemini API 제한 초과 시 자동으로 규칙 기반 메시지 사용
+   - 응답은 항상 반환됨
+
+
+응답 시간
+--------
+- Health Check: <1초
+- AI 사용: 2-5분
+- AI 미사용: 2-4분
+
+
+에러 처리
+--------
+- HTTP 400: CAS Number가 2개 미만
+- HTTP 404: CAMEO에서 화학물질을 찾을 수 없음
+- HTTP 500: 서버 오류
+- Timeout: 5분 초과
+
+
+끝.
