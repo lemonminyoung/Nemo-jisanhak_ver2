@@ -58,9 +58,14 @@ async def crawl_with_suppressed_output(substances: List[str]) -> list:
 
 
 # Request/Response 모델
+class Product(BaseModel):
+    productName: str
+    casNumbers: List[str]
+
+
 class AnalysisRequest(BaseModel):
-    substances: List[str]
-    use_ai: bool = True
+    useAi: bool = True
+    products: List[Product]
 
 
 class SimpleResponse(BaseModel):
@@ -102,14 +107,31 @@ async def hybrid_analyze_endpoint(request: AnalysisRequest):
     """
     하이브리드 분석 (규칙 기반 + Gemini AI 요약)
 
-    간결한 프롬프트 + Nemo-jisanhak 호환 포맷
+    Nemo v1 호환 포맷 (products + casNumbers)
     """
     try:
-        print(f"[V2] Analyzing {len(request.substances)} substances...")
+        # products에서 화학물질명 추출
+        substances = []
+        for product in request.products:
+            # CAS Number가 있으면 첫 번째 CAS로 검색
+            if product.casNumbers and len(product.casNumbers) > 0:
+                substances.append(product.casNumbers[0])
+            # CAS가 없으면 제품명으로 검색
+            elif product.productName:
+                substances.append(product.productName)
+
+        if len(substances) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="At least 2 products are required"
+            )
+
+        print(f"[V2] Analyzing {len(substances)} products...")
+        print(f"[V2] Substances: {substances}")
 
         # 1. CAMEO 크롤링
         print("[V2] Step 1: CAMEO crawling...")
-        cameo_results = await crawl_with_suppressed_output(request.substances)
+        cameo_results = await crawl_with_suppressed_output(substances)
 
         if not cameo_results:
             raise HTTPException(
@@ -127,7 +149,7 @@ async def hybrid_analyze_endpoint(request: AnalysisRequest):
         # 3. Gemini AI 요약 (간결한 프롬프트)
         ai_message = None
 
-        if request.use_ai:
+        if request.useAi:
             print("[V2] Step 3: Gemini AI analysis...")
             gemini_response = analyze_with_gemini_compact(analysis_result)
 
