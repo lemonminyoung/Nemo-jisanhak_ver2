@@ -1,0 +1,15 @@
+services:
+  # FastAPI 백엔드 서비스 Version 2 (Gemini Only)
+  - type: web
+    name: chemical-analyzer-v2
+    env: docker
+    region: oregon
+    plan: free
+    branch: master
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
